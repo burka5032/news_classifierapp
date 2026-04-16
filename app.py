@@ -1,7 +1,4 @@
-from flask import Flask, request, jsonify
 from transformers import pipeline
-
-app = Flask(__name__)
 
 classifier = pipeline(
     "text-classification",
@@ -9,17 +6,19 @@ classifier = pipeline(
     tokenizer="news_ai_model"
 )
 
-@app.route('/predict', methods=['POST'])
-def predict():
-    data = request.get_json()
-    text = data['text']
-
+def predict(text):
     result = classifier(text)
+    label = result[0]["label"]
+    score = float(result[0]["score"])
+    return f"{label} ({score:.2f})"
 
-    return jsonify({
-        "category": result[0]['label'],
-        "confidence": float(result[0]['score'])
-    })
+# Gradio interface
+app = gr.Interface(
+    fn=predict,
+    inputs="text",
+    outputs="text",
+    title="News AI Classifier",
+    description="Enter news text to classify"
+)
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+app.launch()
